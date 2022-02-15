@@ -7,6 +7,7 @@
 
 # Run Jaeger Docker Image
 
+```
 docker run -d --name jaeger \
  -e COLLECTOR_ZIPKIN_HOST_PORT=:9411 \
  -p 5775:5775/udp \
@@ -18,3 +19,36 @@ docker run -d --name jaeger \
  -p 14250:14250 \
  -p 9411:9411 \
  jaegertracing/all-in-one:1.31
+
+# Run Locally
+http://localhost:16686/
+```
+
+# Run Zipkin Docker Image
+
+docker run -d -p 9411:9411 openzipkin/zipkin
+
+# Run Zipkin Jar
+
+curl -sSL https://zipkin.io/quickstart.sh | bash -s
+java -jar zipkin.jar
+
+# Run Zipkin Via Source Code
+
+```
+# get the latest source
+git clone https://github.com/openzipkin/zipkin
+cd zipkin
+# Build the server and also make its dependencies
+./mvnw -DskipTests --also-make -pl zipkin-server clean install
+# Run the server
+java -jar ./zipkin-server/target/zipkin-server-*exec.jar
+```
+
+# Open Telemetry
+
+• The Glue to collect the three pillars together under a unified SDK
+
+• Under CNCF (Cloud Native Compute Foundation)
+
+• One Specification, Implementation for every programming language.
