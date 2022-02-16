@@ -12,15 +12,20 @@ const { Span, Baggage } = require('@opentelemetry/api');
 const { AlwaysOnSampler, AlwaysOffSampler, ParentBasedSampler, TraceIdRatioBasedSampler } = require('@opentelemetry/core');
 const { IORedisInstrumentation } = require('@opentelemetry/instrumentation-ioredis');
 const { serviceSyncDetector } = require('opentelemetry-resource-detector-service');
-const { CollectorTraceExporter, CollectorMetricExporter, } = require('@opentelemetry/exporter-collector');
+const { CollectorTraceExporter, CollectorMetricExporter } = require('@opentelemetry/exporter-collector');
 
 const initializeTelemetry = (serviceName, metricPort) =>{
 
   // Define metrics
-  const metricExporter = new PrometheusExporter({ port: metricPort }, () => {
+  const prometheusMetricExporter = new PrometheusExporter({ port: metricPort }, () => {
     console.log(`scrape: http://localhost:${metricPort}${PrometheusExporter.DEFAULT_OPTIONS.endpoint}`);
   });
-  const meter = new MeterProvider({ exporter: metricExporter, interval: 1000 }).getMeter(serviceName);
+
+  const collectorMetricExporter= new CollectorMetricExporter({
+    url:'http://localhost:4318/v1/metrics'
+  })
+
+  const meter = new MeterProvider({ exporter: collectorMetricExporter, interval: 1000 }).getMeter(serviceName);
 
   // Define traces
   
@@ -29,6 +34,10 @@ const initializeTelemetry = (serviceName, metricPort) =>{
   // Formats : JSON, proto
   const jaegerExporter = new JaegerExporter({ endpoint: 'http://localhost:14268/api/traces'});
   const consoleExporter = new ConsoleSpanExporter();
+  const collectorTraceExporter = new CollectorTraceExporter({
+    url:'http://localhost:4318/v1/trace'
+  });
+
 
   //2.) Define the resources
   const serviceResources = serviceSyncDetector.detect();
@@ -37,7 +46,7 @@ const initializeTelemetry = (serviceName, metricPort) =>{
 
 
   //3.) Define the samplers
-  const alwaysOnSampler = new AlwaysOffSampler();
+  const alwaysOnSampler = new AlwaysOnSampler();
   const paranetBasedSampler = new ParentBasedSampler({
     root: new TraceIdRatioBasedSampler(1)
   });
@@ -52,6 +61,8 @@ const initializeTelemetry = (serviceName, metricPort) =>{
   // SimpleSpanProcessor simply gets a span and ship it to the exporter in this case Jaeger Exporter.
   const simpleSpanProcessorWithJaegerExporter = new SimpleSpanProcessor(jaegerExporter);
   const simpleSpanProcessorWithConsoleExporter = new SimpleSpanProcessor(consoleExporter);
+  const simpleSpanProcessorWithCollectorExporter = new SimpleSpanProcessor(collectorTraceExporter);
+
 
   // Batch Span Processor Example. It would buffer the spans.Below example would wait for 7 seconds before shipping the buffered
   // spans to the exporter.
@@ -60,7 +71,7 @@ const initializeTelemetry = (serviceName, metricPort) =>{
   });
 
   // Add the processor to the provider
-  provider.addSpanProcessor(simpleSpanProcessorWithJaegerExporter);
+  provider.addSpanProcessor(simpleSpanProcessorWithCollectorExporter);
 
   provider.register();
   // Register the Instrumentations. Below are example of auto-instrumentation.
