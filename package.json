@@ -4,8 +4,8 @@
   "description": "1. Logs: The application story. 2. Metrics: Numbers telling the statistical facts about the system 3. Trace: The context of why things are happening.    a. Trace Events",
   "main": "index.js",
   "scripts": {
-    "startItem": "nodemon ./src/item-service.js",
-    "startUser": "nodemon ./src/user-service.js"
+    "itemService": "nodemon ./src/item-service.js",
+    "userService": "nodemon ./src/user-service.js"
   },
   "repository": {
     "type": "git",
