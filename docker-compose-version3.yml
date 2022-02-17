@@ -1,5 +1,20 @@
 version: "3"
 services:
+  es:
+    container_name: es
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
+    environment:
+      - discovery.type=single-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es:/usr/share/elasticsearch/data
+    ports:
+      - '9200:9200'
+      - '9300:9300'
+
   collector-gateway:
     image: otel/opentelemetry-collector-contrib:0.29.0
     volumes:
@@ -16,6 +31,9 @@ services:
 
   jaeger:
     image: jaegertracing/all-in-one:1.31
+    environment:
+      - SPAN_STORAGE_TYPE=elasticsearch
+      - ES_SERVER_URLS=http://localhost:9200
     ports:
       - 5775:5775 # UDP:AGENT:accept zipkin.thrift over compact thrift protocol (deprecated, used by legacy clients only)
       - 6831:6831 # UDP:AGENT:accept jaeger.thrift over compact thrift protocol
@@ -28,3 +46,6 @@ services:
     deploy:
       restart_policy:
         condition: on-failure
+
+volumes:
+  es: {}
